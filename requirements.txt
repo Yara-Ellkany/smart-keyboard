@@ -1,4 +1,2 @@
---extra-index-url https://download.pytorch.org/whl/cpu
 streamlit
-transformers
-torch
+pyspellchecker
