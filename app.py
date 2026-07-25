@@ -1,27 +1,20 @@
 import streamlit as st
-from spellchecker import SpellChecker
+from transformers import pipeline
 
-spell = SpellChecker()
+st.title(" Smart Keyboard for Kids")
 
-st.title(" Smart Keyboard")
+@st.cache_resource
+def load_model():
+    return pipeline(
+        "text2text-generation",
+        model="vennify/t5-base-grammar-correction"
+    )
 
-word = st.text_input("Type a word")
+corrector = load_model()
 
-if word:
-    word = word.lower()
+text = st.text_area("Type your sentence")
 
-    if word in spell:
-        st.success(f" '{word}' is correct!")
-    else:
-        correction = spell.correction(word)
-        suggestions = list(spell.candidates(word) or [])
-
-        st.error(" Incorrect spelling")
-
-        if correction:
-            st.success(f"Did you mean: {correction}")
-
-        if suggestions:
-            st.write("Suggestions:")
-            for s in suggestions:
-                st.write("•", s)
+if st.button("Correct"):
+    if text:
+        result = corrector("grammar: " + text, max_length=100)
+        st.success(result[0]["generated_text"])
