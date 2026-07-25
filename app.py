@@ -3,7 +3,7 @@ from spellchecker import SpellChecker
 
 spell = SpellChecker()
 
-st.title(" Smart Keyboard for Kids")
+st.title(" Smart Keyboard")
 
 word = st.text_input("Type a word")
 
