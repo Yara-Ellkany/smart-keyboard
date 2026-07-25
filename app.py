@@ -1,15 +1,44 @@
 import streamlit as st
-import language_tool_python
+from rapidfuzz import process
+
+st.set_page_config(page_title="Smart Keyboard", page_icon="⌨️")
 
 st.title(" Smart Keyboard for Kids")
 
-tool = language_tool_python.LanguageTool('en-US')
+with open("words.txt", "r") as f:
+    words = [w.strip() for w in f.readlines()]
 
-text = st.text_area("Type your sentence:")
+if "text" not in st.session_state:
+    st.session_state.text = ""
 
-if st.button("Correct"):
-    matches = tool.check(text)
-    corrected = language_tool_python.utils.correct(text, matches)
+text = st.text_input(
+    "Type here...",
+    value=st.session_state.text,
+    key="input_text"
+)
 
-    st.write("### Corrected Sentence")
-    st.success(corrected)
+last_word = text.split()[-1] if text else ""
+
+if last_word:
+
+    suggestions = process.extract(
+        last_word,
+        words,
+        limit=5
+    )
+
+    st.write("### 💡 Suggestions")
+
+    cols = st.columns(len(suggestions))
+
+    for i, (word, score, _) in enumerate(suggestions):
+
+        if cols[i].button(word):
+
+            parts = text.split()
+
+            parts[-1] = word
+
+            st.session_state.text = " ".join(parts)
+
+            st.rerun()
