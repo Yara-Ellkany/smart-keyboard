@@ -1,2 +1,2 @@
-streamlit
-language-tool-python
+streamlit==1.48.0
+language-tool-python==2.9.4
