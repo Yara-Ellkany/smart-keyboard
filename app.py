@@ -1,63 +1,38 @@
 import streamlit as st
-from difflib import get_close_matches
+from transformers import pipeline
 
-st.set_page_config(page_title="لوحة المفاتيح الذكية", page_icon="🌟")
-st.title("🌟 لوحة المفاتيح الذكية - نسخة بسيطة")
+st.set_page_config(page_title="Text AI Chat", page_icon="💬")
 
-# 1) النص اللي البرنامج بيتعلم منه
-النص = "انا احب البرمجة. انا احب القراءة. انا احب اللعب. هي تحب الرسم."
-كلمات = النص.replace(".", "").split()
-
-# قائمة بكل الكلمات الفريدة اللي البرنامج يعرفها (تستخدم للتصحيح)
-الكلمات_المعروفة = list(set(كلمات))
-
-# 2) بناء قاموس الاقتراحات (أي كلمة بتيجي بعدها إيه)
-الاقتراحات = {}
-for i in range(len(كلمات) - 1):
-    كلمة_حالية = كلمات[i]
-    كلمة_تالية = كلمات[i + 1]
-    if كلمة_حالية not in الاقتراحات:
-        الاقتراحات[كلمة_حالية] = []
-    الاقتراحات[كلمة_حالية].append(كلمة_تالية)
+st.title("💬 Text AI Chat")
 
 
-# 3) دالة تصحح الكلمة لو مكتوبة غلط
-def صحح_كلمة(كلمة):
-    # لو الكلمة موجودة أصلاً في اللي البرنامج يعرفه، منحتاجش نصححها
-    if كلمة in الكلمات_المعروفة:
-        return كلمة, False
-
-    # نبحث عن أقرب كلمة معروفة شبه اللي المستخدم كتبه
-    أقرب_كلمات = get_close_matches(كلمة, الكلمات_المعروفة, n=1, cutoff=0.6)
-
-    if أقرب_كلمات:
-        return أقرب_كلمات[0], True  # تم إيجاد تصحيح
-
-    return كلمة, False  # مفيش تصحيح مناسب
+@st.cache_resource
+def load_model():
+    return pipeline("text-generation", model="gpt2")
 
 
-# 4) دالة بسيطة تقترح الكلمة الجاية
-def اقترح_كلمة(كلمة):
-    if كلمة in الاقتراحات:
-        return الاقتراحات[كلمة][0]
-    else:
-        return "مفيش اقتراح 🤔"
+qa_model = load_model()
 
 
-# 5) واجهة المستخدم
-st.write("اكتب كلمة، ولو غلط هيصححها البرنامج، وبعدين هيقترح الكلمة اللي ممكن تيجي بعدها 👇")
-كلمة_المستخدم = st.text_input("اكتب كلمة هنا:")
+def chat(message: str) -> str:
+    if not message.strip():
+        return "Please write a question."
 
-if كلمة_المستخدم:
-    الكلمة_الأصلية = كلمة_المستخدم.strip()
-    كلمة_مصححة, تم_التصحيح = صحح_كلمة(الكلمة_الأصلية)
+    prompt = f"Q: {message}\nA:"
 
-    if تم_التصحيح:
-        st.warning(f"🔧 يمكن تقصد: **{كلمة_مصححة}** بدل **{الكلمة_الأصلية}**")
+    response = qa_model(
+        prompt,
+        max_length=80,
+        do_sample=True,
+        temperature=0.7
+    )
 
-    اقتراح = اقترح_كلمة(كلمة_مصححة)
-    st.success(f"البرنامج يقترح: **{اقتراح}**")
+    return response[0]["generated_text"].replace(prompt, "").strip()
 
-st.markdown("---")
-st.write("النص اللي اتعلم منه البرنامج:")
-st.info(النص)
+
+text_input = st.text_input("Write your question")
+
+if st.button("Send"):
+    with st.spinner("Thinking..."):
+        answer = chat(text_input)
+    st.text_area("Answer", value=answer, height=150)
